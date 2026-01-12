@@ -58,11 +58,9 @@ func connectDB() (*sql.DB, error) {
 	return db, nil
 }
 
-// ---- Auth (very simple for demo): accept email + role check exists ----
-
 type loginRequest struct {
 	Email string `json:"email"`
-	Role  string `json:"role"` // "staff" or "customer"
+	Role  string `json:"role"` // "staff" o "customer"
 }
 
 type loginResponse struct {
@@ -102,7 +100,7 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ---- Rentals ----
+// ---- Rentas ----
 
 type rentRequest struct {
 	CustomerID  int `json:"customer_id"`
@@ -120,7 +118,7 @@ func (a *App) Rent(w http.ResponseWriter, r *http.Request) {
 		respondJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
 		return
 	}
-	// Ensure inventory item is not currently rented out (open rental)
+	// Se asegura que el stock no esté rentado
 	var openCount int
 	if err := a.DB.QueryRow(`SELECT COUNT(*) FROM rental WHERE inventory_id=$1 AND return_date IS NULL`, req.InventoryID).Scan(&openCount); err != nil {
 		respondJSON(w, http.StatusInternalServerError, apiError{Error: err.Error()})
@@ -130,7 +128,7 @@ func (a *App) Rent(w http.ResponseWriter, r *http.Request) {
 		respondJSON(w, http.StatusConflict, apiError{Error: "inventory already rented"})
 		return
 	}
-	// Create rental
+	// Crea una renta
 	var rentalID int
 	err := a.DB.QueryRow(
 		`INSERT INTO rental (rental_date, inventory_id, customer_id, staff_id) VALUES (NOW(), $1, $2, $3) RETURNING rental_id`,
@@ -159,7 +157,7 @@ func (a *App) Return(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]any{"returned": id})
 }
 
-// Cancel: if rental not returned yet, delete it (simple policy)
+// Cancela: si la renta no se ha devuelto, elimínala
 func (a *App) Cancel(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["rental_id"]
 	id, _ := strconv.Atoi(idStr)
@@ -179,7 +177,7 @@ func (a *App) Cancel(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]any{"canceled": id})
 }
 
-// Helper: find an available inventory_id for a film
+// Helper: encuentra una renta disponible para un dvd
 func (a *App) AvailableInventory(w http.ResponseWriter, r *http.Request) {
 	filmIDStr := r.URL.Query().Get("film_id")
 	if filmIDStr == "" {
@@ -207,7 +205,7 @@ func (a *App) AvailableInventory(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]any{"inventory_ids": ids})
 }
 
-// ---- Reports ----
+// ---- Reportes ----
 
 // 1) Lista de todas las rentas de un cliente
 func (a *App) ReportCustomerRentals(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +305,6 @@ func (a *App) ReportTopRented(w http.ResponseWriter, r *http.Request) {
 }
 
 // 4) Calcular el total de ganancia generada por cada miembro del staff
-// In dvdrental, payments link to staff via staff_id
 func (a *App) ReportRevenueByStaff(w http.ResponseWriter, r *http.Request) {
 	rows, err := a.DB.Query(`
 		SELECT s.staff_id, s.first_name||' '||s.last_name as staff, COALESCE(SUM(p.amount),0) as revenue
@@ -348,13 +345,13 @@ func main() {
 	r := mux.NewRouter()
 	// auth
 	r.HandleFunc("/api/auth/login", app.Login).Methods("POST")
-	// rentals
+	// rentas
 	r.HandleFunc("/api/rentals", app.Rent).Methods("POST")
 	r.HandleFunc("/api/returns/{rental_id}", app.Return).Methods("POST")
 	r.HandleFunc("/api/rentals/{rental_id}/cancel", app.Cancel).Methods("POST")
 	r.HandleFunc("/api/inventory/available", app.AvailableInventory).Methods("GET")
 
-	// reports
+	// reportes
 	r.HandleFunc("/api/reports/customer/{customer_id}/rentals", app.ReportCustomerRentals).Methods("GET")
 	r.HandleFunc("/api/reports/not-returned", app.ReportNotReturned).Methods("GET")
 	r.HandleFunc("/api/reports/top-rented", app.ReportTopRented).Methods("GET")

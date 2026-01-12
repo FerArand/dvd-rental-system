@@ -3,7 +3,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>DVD Rental Desktop</title>
+  <title>DVD Rental</title>
   <style>
     body { font-family: system-ui, sans-serif; margin: 20px; }
     .card { border:1px solid #ddd; padding: 16px; border-radius: 10px; margin-bottom: 16px; }
@@ -18,13 +18,13 @@
   </style>
 </head>
 <body>
-  <h1>DVD Rental Desktop (HTML + CSS + JS)</h1>
+  <h1>DVD Rental</h1>
 
   <div class="card">
     <h3>Login</h3>
-    <label>Role:
+    <label>Rol:
       <select id="role">
-        <option value="customer">customer</option>
+        <option value="customer">cliente</option>
         <option value="staff">staff</option>
       </select>
     </label>
@@ -35,38 +35,38 @@
 
   <div class="row">
     <div class="card">
-      <h3>Rent a DVD</h3>
+      <h3>Rentar un DVD</h3>
       <input id="filmId" placeholder="film_id e.g. 1">
-      <button id="findInv">Find available inventory</button>
-      <div>Inventory <select id="inventory"></select></div>
-      <div>Customer ID <input id="customerId" placeholder="e.g. 1"></div>
-      <div>Staff ID <input id="staffId" placeholder="e.g. 1"></div>
-      <button id="doRent">Create Rental</button>
+      <button id="findInv">Encontrar Stock</button>
+      <div>Inventario <select id="inventory"></select></div>
+      <div>ID Cliente <input id="customerId" placeholder="e.g. 1"></div>
+      <div>ID Staff <input id="staffId" placeholder="e.g. 1"></div>
+      <button id="doRent">Rentar DVD</button>
       <div id="rentStatus"></div>
     </div>
 
     <div class="card">
-      <h3>Return / Cancel</h3>
+      <h3>Regresar / Cancelar</h3>
       <input id="rentalId" placeholder="rental_id">
-      <button id="doReturn">Return</button>
-      <button id="doCancel">Cancel</button>
+      <button id="doReturn">Regresar</button>
+      <button id="doCancel">Cancelar</button>
       <div id="returnStatus"></div>
     </div>
   </div>
 
   <div class="card">
-    <h3>Reports</h3>
+    <h3>Reportes</h3>
     <div>
-      Customer ID <input id="repCustomerId" placeholder="e.g. 1">
-      <button id="repCust">Customer Rentals</button>
+      ID Cliente <input id="repCustomerId" placeholder="e.g. 1">
+      <button id="repCust">Rentas de clientes</button>
     </div>
     <div>
-      <button id="repNotReturned">Not Returned</button>
-      <button id="repTop">Top Rented</button>
-      Limit <input id="repLimit" value="10" size="4">
+      <button id="repNotReturned">No devueltos</button>
+      <button id="repTop">Top Rentados</button>
+      Limite <input id="repLimit" value="10" size="4">
     </div>
     <div>
-      <button id="repRevenue">Revenue by Staff</button>
+      <button id="repRevenue">Ingresos por empleado</button>
     </div>
     <div id="reportOut"></div>
   </div>
@@ -85,7 +85,7 @@ async function login(){
     body: JSON.stringify({email, role})
   });
   const data = await res.json();
-  out(document.getElementById('loginStatus'), res.ok? `Logged in as ${data.name} (${data.role}) id=${data.id}`: data.error, res.ok);
+  out(document.getElementById('loginStatus'), res.ok? `Iniciado como ${data.name} (${data.role}) id=${data.id}`: data.error, res.ok);
 }
 async function findInv(){
   const filmId = document.getElementById('filmId').value;
@@ -106,19 +106,19 @@ async function doRent(){
     body: JSON.stringify({customer_id:customerId, staff_id:staffId, inventory_id:inventoryId})
   });
   const data = await res.json();
-  out(document.getElementById('rentStatus'), res.ok? `Rental created id=${data.rental_id}`: data.error, res.ok);
+  out(document.getElementById('rentStatus'), res.ok? `Renta creada id=${data.rental_id}`: data.error, res.ok);
 }
 async function doReturn(){
   const id = document.getElementById('rentalId').value;
   const res = await fetch(API + '/api/returns/'+id, {method:'POST'});
   const data = await res.json().catch(()=>({}));
-  out(document.getElementById('returnStatus'), res.ok? `Returned ${id}`: (data.error||'error'), res.ok);
+  out(document.getElementById('returnStatus'), res.ok? `Regresado ${id}`: (data.error||'error'), res.ok);
 }
 async function doCancel(){
   const id = document.getElementById('rentalId').value;
   const res = await fetch(API + '/api/rentals/'+id+'/cancel', {method:'POST'});
   const data = await res.json().catch(()=>({}));
-  out(document.getElementById('returnStatus'), res.ok? `Canceled ${id}`: (data.error||'error'), res.ok);
+  out(document.getElementById('returnStatus'), res.ok? `Cancelado ${id}`: (data.error||'error'), res.ok);
 }
 
 async function repCustomer(){
