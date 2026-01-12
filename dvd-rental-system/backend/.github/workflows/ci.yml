@@ -1,0 +1,71 @@
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dvdrental
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Restore dvdrental
+        run: |
+          sudo apt-get install -y postgresql-client
+          # Expect dvdrental.tar to live in backend/db-init/dvdrental.tar in repo
+          pg_restore -h localhost -U postgres -d dvdrental backend/db-init/dvdrental.tar
+        env:
+          PGPASSWORD: postgres
+
+      - name: Build API
+        working-directory: backend
+        run: go build -o server main.go
+
+      - name: Run API in background
+        working-directory: backend
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: dvdrental
+          PGSSLMODE: disable
+          ADDR: ":8080"
+        run: |
+          ./server &
+          echo $! > api_pid.txt
+          sleep 3
+
+      - name: Run curl/bash tests
+        working-directory: backend
+        env:
+          API_BASE: "http://localhost:8080"
+        run: ./scripts/test.sh
+
+      - name: Stop API
+        if: always()
+        working-directory: backend
+        run: kill $(cat api_pid.txt) || true

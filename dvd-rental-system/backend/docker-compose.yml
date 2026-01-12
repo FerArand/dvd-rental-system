@@ -1,0 +1,25 @@
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dvdrental
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
+  api:
+    build: .
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: dvdrental
+      PGSSLMODE: disable
+      ADDR: ":8080"
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
