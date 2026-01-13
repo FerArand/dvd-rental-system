@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  selector:
+    app: dvd-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dvd-db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dvd-db
+  template:
+    metadata:
+      labels:
+        app: dvd-db
+    spec:
+      containers:
+        - name: postgres
+          image: my-dvd-db:v1  # La imagen que creamos con el .tar incluido
+          imagePullPolicy: Never # Usa la imagen local de Minikube
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "dvdrental"
+          ports:
+            - containerPort: 5432
